@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Agentic ML Chatbot</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 900px;
+            height: 90vh;
+            margin: 5vh auto;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            padding: 20px;
+            background: #222;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .new-chat {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #chat {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            max-width: 75%;
+            line-height: 1.5;
+        }
+
+        .user {
+            margin-left: auto;
+            background: #e3f2fd;
+        }
+
+        .agent {
+            margin-right: auto;
+            background: #f0f0f0;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            gap: 10px;
+        }
+
+        #message {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .send {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #222;
+            color: white;
+        }
+
+        .send:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            font-style: italic;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app">
+
+        <div class="header">
+            <h2>🤖 Agentic ML Chatbot</h2>
+
+            <button class="new-chat" onclick="newChat()">
+                New Chat
+            </button>
+        </div>
+
+        <div id="chat">
+            <div class="message agent">
+                Hello! I'm your Agentic ML Chatbot. Ask me a question.
+            </div>
+        </div>
+
+        <div class="input-area">
+
+            <input
+                type="text"
+                id="message"
+                placeholder="Ask something..."
+                onkeydown="handleKey(event)"
+            >
+
+            <button
+                class="send"
+                id="sendButton"
+                onclick="sendMessage()"
+            >
+                Send
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        async function sendMessage() {
+
+            const input = document.getElementById("message");
+            const chat = document.getElementById("chat");
+            const button = document.getElementById("sendButton");
+
+            const message = input.value.trim();
+
+            if (!message) {
+                return;
+            }
+
+            chat.innerHTML += `
+                <div class="message user">
+                    ${message}
+                </div>
+            `;
+
+            input.value = "";
+
+            button.disabled = true;
+
+            chat.innerHTML += `
+                <div class="message agent loading" id="loading">
+                    Agent is thinking...
+                </div>
+            `;
+
+            chat.scrollTop = chat.scrollHeight;
+
+            try {
+
+                const response = await fetch(
+                    "http://127.0.0.1:8000/chat",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            message: message
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                document.getElementById("loading").remove();
+
+                let answer = "Something went wrong.";
+
+                if (data.response) {
+
+                    if (data.response.answer) {
+                        answer = data.response.answer;
+                    }
+
+                    else if (data.response.error) {
+                        answer = data.response.error;
+                    }
+                }
+
+                chat.innerHTML += `
+                    <div class="message agent">
+                        ${answer}
+                    </div>
+                `;
+
+            }
+
+            catch (error) {
+
+                document.getElementById("loading").remove();
+
+                chat.innerHTML += `
+                    <div class="message agent">
+                        Could not connect to the backend.
+                    </div>
+                `;
+            }
+
+            button.disabled = false;
+
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+
+        function handleKey(event) {
+
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+
+        function newChat() {
+
+            document.getElementById("chat").innerHTML = `
+                <div class="message agent">
+                    New conversation started. How can I help?
+                </div>
+            `;
+        }
+
+    </script>
+
+</body>
+
+</html>
